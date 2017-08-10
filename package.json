@@ -1,0 +1,20 @@
+{
+  "name": "release-helper",
+  "version": "1.0.0",
+  "description": "A helper CLI for merging and deploying a release, as a step-by-step process.",
+  "main": "index.js",
+  "bin": {
+    "release-helper": "./index.js"
+  },
+  "author": "Gal Niv <gal.niv@gmail.com>",
+  "dependencies": {
+    "bluebird": "3.5.0",
+    "chalk": "2.0.1",
+    "columnify": "1.5.4",
+    "figures": "2.0.0",
+    "inquirer": "3.2.1",
+    "lodash": "4.17.4",
+    "preferences": "0.2.1",
+    "prompt": "1.0.0"
+  }
+}
