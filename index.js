@@ -78,5 +78,14 @@ let promise = Promise.try(() => {
 
   let answer = await inquirer.prompt({ name: 'projectName', message: 'What would you like to call this project?', default: directoryName });
   prefs.projects[currentPath] = {};
+
+    // Start a deployment?
+  let answer = await inquirer.prompt({ type: 'confirm', name: 'startDeployment', message: 'Would you like to start a deployment now?', default: true });
+
+  if (!answer.startDeployment) {
+    writeln('OK!');
+    return returnToMenu();
+  }
+
 });
 
