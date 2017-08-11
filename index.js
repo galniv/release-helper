@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-"use strict";
+`use strict`;
 const _ = require('lodash');
 const chalk = require('chalk');
 const fs = require('fs');
@@ -8,9 +8,10 @@ const Promise = require('bluebird');
 const preferences = require('preferences');
 const inquirer = require('inquirer');
 const columnify = require('columnify');
-const exec = require('child_process').exec;
-const execAsync = Promise.promisify(exec, { multiArgs: true });
-const utils = require('./utils')
+const git = require('simple-git/promise')();
+const utils = require('./utils');
+const write = utils.write;
+const writeln = utils.writeln;
 
 /*
   => enter 'pre-merge stage'
@@ -51,101 +52,31 @@ function skipState(currentState) {
   return prefs.projects[currentPath].state && states.indexOf(prefs.projects[currentPath].state) > states.indexOf(currentState);
 }
 
-process.stdout.write(chalk.green('Welcome! '));
+function exitWithError(errorText) {
+  writeln(chalk.red('Problem: ') + errorText);
+  process.exit(0);
+}
 
-// Choose a project or add one if there are none.
+write(chalk.green('Welcome! '));
+
+// Choose a project, or add one if there are none.
 let promise = Promise.try(() => {
   if (prefs.projects[currentPath]) {
     const projectNames = Object.keys(prefs.projects);
     const activeProjects = projectNames.filter((name) => {
       return prefs.projects[name].status === 'active';
     });
-    console.log(`You have ${chalk.yellow(projectNames.length)} projects configured. ${ activeProjects.length === 0 ? 'None' : activeProjects.length } of them are in the process of being released.`)
+    writeln(`You have ${chalk.yellow(projectNames.length)} projects configured. ${ activeProjects.length === 0 ? 'None' : activeProjects.length } of them are in the process of being released.`)
 
     return;
   }
 
   // FIXME: should ask if you want to set it up, rather than assume you do.
-  console.log("You haven't set up a project corresponding to the current path yet."  + chalk.cyan(" Let's do that now.\n"));
+  writeln(`You haven't set up a project corresponding to the current path yet.` + chalk.cyan(`Let's do that now.`));
 
   const directoryName = currentPath.split(path.sep).pop();
 
-  return inquirer.prompt({ name: 'projectName', message: 'What would you like to call this project?', default: directoryName }).then((answer) => {
-    prefs.projects[currentPath] = {};
-  });
+  let answer = await inquirer.prompt({ name: 'projectName', message: 'What would you like to call this project?', default: directoryName });
+  prefs.projects[currentPath] = {};
 });
-
-// Pre-merge
-promise = promise.then(() => {
-  if (skipState('pre-merge')) return;
-
-  // Start a deployment?
-  return inquirer.prompt({ type: 'confirm', name: 'startDeployment', message: 'Would you like to start a deployment now?', default: true }).then((answer) => {
-    if (!answer.startDeployment) {
-      // TODO: kick off to a main menu
-      return;
-    }
-
-    // Checkout master if necesary.
-    let preMergePromise = execAsync('git status').then(([, stdout]) => {
-      if (stdout.startsWith('On branch master')) { return callback(); }
-
-      process.stdout.write('Checking out the ' + chalk.cyan('master') + ' branch... ');
-      exec('git checkout master');
-      console.log('done');
-      callback();
-    });
-
-    // Pull master.
-    preMergePromise = preMergePromise.then(() => {
-      process.stdout.write('Pulling latest changes... ');
-      exec('git pull');
-      console.log('done')
-    });
-
-    const packageVersion;
-    // Load package.json and verify there is no existing tag matching version.
-    preMergePromise = preMergePromise.then(() =>
-      packageVersion = require(currentPath + path.sep + 'package.json').version;
-      return execAsync(`git tag | grep ${packageVersion}`).then(([, stdout]) => {
-        if (stdout !== packageFile.version) {
-          console.log(chalk.red('Problem: ') + `package.json contains version ${packageVersion}, but a tag by that name already exists!`)
-          process.exit(0);
-        }
-      });
-    });
-
-    preMergePromise = preMergePromise.then(() => {
-      let filenamePrompt = { type: 'input', name: 'logFilename', message: 'What is the changelog file name?' };
-
-      if (prefs.projects[currentPath].changelogFilename) {
-        filenamePrompt.default = prefs.projects[currentPath].changelogFilename;
-        filenamePrompt.message += ' (previously used ' + prefs.projects[currentPath].changelogFilename + ' for this project)';
-      }
-      else {
-        const filenameGuess = fs.readdirSync('.').find((filename) => { return filename.toLowerCase().startsWith('changelog'); })
-        if (filenameGuess) {
-          filenamePrompt.default = filenameGuess;
-          filenamePrompt.message += ' (I found a file called ' + filenameGuess + ' in the current directory)';
-        }
-      }
-      return inquirer.prompt(filenamePrompt).then((answer) => {
-        // Remember the filename for next time.
-        if (!prefs.projects[currentPath].changelogFilename) {
-          prefs.projects[currentPath].changelogFilename = answer.logFilename;
-        }
-        
-        try {
-          let changelogContents = fs.readFileSync(answer.logFilename, { encoding: 'utf8' });
-          
-        }
-        catch (changelogReadError) {
-          console.log(chalk.red('Problem: ') + changelogReadError);
-          process.exit(0);
-        }
-      });
-    });
-  });
-});
-
 

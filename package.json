@@ -9,12 +9,16 @@
   "author": "Gal Niv <gal.niv@gmail.com>",
   "dependencies": {
     "bluebird": "3.5.0",
-    "chalk": "2.0.1",
+    "chalk": "2.1.0",
     "columnify": "1.5.4",
     "figures": "2.0.0",
     "inquirer": "3.2.1",
     "lodash": "4.17.4",
     "preferences": "0.2.1",
-    "prompt": "1.0.0"
+    "prompt": "1.0.0",
+    "simple-git": "1.75.0"
+  },
+  "scripts": {
+    "lint": "eslint ."
   }
 }

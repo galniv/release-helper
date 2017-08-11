@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const figures = require('figures');
 
 // Generate a modified inquirer.Separator object, containing a string title.
-module.exports.generateTitledSeparator = function (title, maxTitleLength) {
+module.exports.generateTitledSeparator = function(title, maxTitleLength) {
   if (!maxTitleLength) {
     maxTitleLength = title.length;
   }
@@ -16,4 +16,18 @@ module.exports.generateTitledSeparator = function (title, maxTitleLength) {
   var separatorText = new Array(titlePadding).join(figures.line) + ' ' + title + ' ' + new Array(endPadding).join(figures.line);
   // Dim the separator text.
   return new inquirer.Separator(chalk.dim(separatorText));
+}
+
+module.exports.write = function(string) {
+  process.stdout.write(string);
+}
+
+module.exports.writeln = function(string) {
+  process.stdout.write(string + '\n');
+}
+
+module.exports.runAsync = async function(description, functionToRun) {
+  process.stdout.write(string + '... ');
+  await functionToRun;
+  process.stdout.write('done\n');
 }
